@@ -3,7 +3,14 @@ const router = express.Router();
 const { ROLE } = require("../data");
 const { authUser, authRole } = require("../basicAuth");
 // const { canViewProject, canDeleteProject, scopedProjects } = require('../permissions/project')
-const { getAllEnterprises, getEnterprise } = require("../repositories/enterprises");
+const {
+    getAllEnterprises,
+    getEnterprise,
+    deleteEnterprise,
+    recoveryEnterprise,
+    updateEnterprise,
+    createEnterprise,
+} = require("../repositories/enterprises");
 
 router.get("/", authUser, authRole(ROLE.ADMIN), (req, res) => {
     const response = async () => {
@@ -23,7 +30,7 @@ router.get("/:enterpriseId", authUser, authRole(ROLE.ADMIN), (req, res) => {
 router.post("/", authUser, authRole(ROLE.ADMIN), (req, res) => {
     const response = async () => {
         const enterpriseId = parseInt(req.params.enterpriseId);
-        res.json(`► Work In Progress » Create`);
+        res.json(await createEnterprise(req.body.payload));
     };
     response();
 });
@@ -31,15 +38,25 @@ router.post("/", authUser, authRole(ROLE.ADMIN), (req, res) => {
 router.delete("/:enterpriseId", authUser, authRole(ROLE.ADMIN), (req, res) => {
     const response = async () => {
         const enterpriseId = parseInt(req.params.enterpriseId);
-        res.json(`► Work In Progress » Delete`);
+        res.json(await deleteEnterprise(enterpriseId));
+    };
+    response();
+});
+
+router.patch("/:enterpriseId", authUser, authRole(ROLE.ADMIN), (req, res) => {
+    // Recovery
+    const response = async () => {
+        const enterpriseId = parseInt(req.params.enterpriseId);
+        res.json(await recoveryEnterprise(enterpriseId));
     };
     response();
 });
 
 router.put("/:enterpriseId", authUser, authRole(ROLE.ADMIN), (req, res) => {
     const response = async () => {
-        const enterpriseId = parseInt(req.params.enterpriseId);
-        res.json(`► Work In Progress » Update`);
+        res.json(
+            await updateEnterprise(req.params.enterpriseId, req.body.payload)
+        );
     };
     response();
 });

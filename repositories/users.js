@@ -45,8 +45,8 @@ const deleteUser = async (idUser) => {
         const querySql = `UPDATE ${config.table} SET active = 0 WHERE id = ${idUser}`;
         const [rows] = await conn.query(querySql);
 
-        if (!rows.length) {
-            console.log("► Nenhum usuário encontrado");
+        if (!rows.affectedRows) {
+            console.log("► Nenhum usuário deletado");
         }
         return Boolean(rows.affectedRows);
     } catch (err) {
@@ -72,8 +72,41 @@ const recoveryUser = async (idUser) => {
     }
 };
 
-const updateUser = async (idUser) => {
-    return `WIP ${idUser}`;
+const updateUser = async (idUser, payload) => {
+    if (!payload) {
+        return false;
+    }
+
+    const userData = {
+        id_role: Number(payload.id_role) || "",
+        name: payload.name.toString().toLowerCase() || "",
+        email: payload.email.toString().toLowerCase() || "",
+    };
+
+    if (!Object.values(userData).every((elem) => Boolean(elem) == true)) {
+        console.error("► ! Erro de validação !");
+        return false;
+    }
+
+    const handleColumns = Object.entries(userData).reduce((acc, curr) => {
+        return (acc += `${curr[0]} = "${curr[1].toString().toLowerCase()}",`);
+    }, "");
+    const setColumns = handleColumns.slice(0, handleColumns.lastIndexOf(","));
+
+    try {
+        const { connect } = require("../db");
+        const conn = await connect();
+        const querySql = `UPDATE ${config.table} SET ${setColumns} WHERE id = ${idUser}`;
+        const [rows] = await conn.query(querySql);
+
+        if (!rows.affectedRows) {
+            console.log("► ! Nenhum usuário Alterado !");
+        }
+        return Boolean(rows.affectedRows);
+    } catch (err) {
+        console.error("► ! problema com a conexão ao banco de dados !", err);
+        return [];
+    }
 };
 
 const createUser = async (payload) => {
@@ -82,34 +115,29 @@ const createUser = async (payload) => {
     }
 
     const userData = {
-        id_role: payload.id_role || "",
-        name: payload.name || "",
-        email: payload.email || "",
+        id_role: Number(payload.id_role) || "",
+        name: payload.name.toString().toLowerCase() || "",
+        email: payload.email.toString().toLowerCase() || "",
     };
-
-    // {
-    //     "userId": 1,
-    //     "payload": {
-    //         "id_role": 1,
-    //         "name": "Carlos",
-    //         "email": "carlos@cherrytech.com.br"
-    //     }
-    // }
 
     if (!Object.values(userData).every((elem) => Boolean(elem) == true)) {
         return false;
     }
-
+    
+    const handleColumns = Object.keys(userData).join(", ")
+    const handleValues = Object.values(userData).join("', '")
+    const handleInsertValues = `(${handleColumns}) VALUES ('${handleValues}')`;    
+    const querySql = `INSERT INTO ${config.table} ${handleInsertValues}`;
+    
     try {
         const { connect } = require("../db");
         const conn = await connect();
-        const querySql = `INSERT INTO ${config.table} (id_role, name, email) VALUES ('${userData.id_role}','${userData.name}','${userData.email}')`;
         const [rows] = await conn.query(querySql);
-
-        if (!rows.affectedRows) {
+        if (!rows.insertId) {
             console.log("► ! Nenhum usuário Cadastrado !");
         }
-        return Boolean(rows.affectedRows);
+        
+        return {insertId: rows.insertId, ...userData};
     } catch (err) {
         console.error("► ! problema com a conexão ao banco de dados !", err);
         return [];
@@ -124,3 +152,14 @@ module.exports = {
     updateUser,
     createUser,
 };
+
+// =========== // Paylod // =========== //
+// {
+//     "userId": 1,
+//     "payload": {
+//         "id_role": 1,
+//         "name": "nome",
+//         "email": "nome@cherrytech.com.br"
+//     }
+// }
+// =========== // Paylod // =========== //
